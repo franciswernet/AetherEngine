@@ -1006,12 +1006,14 @@ final class NativeAVPlayerHost {
         // explicit rate write (setRateCalled) only: end of item, a dying source and system pauses leave it alone.
         // Only once the current item is ready to play: a rate write before that is treated as the swap's, not the
         // viewer's, because clearing the latch there would park the session at readyToPlay+paused (issue #15).
+        // The key's value, written out: tvOS marks the AVPlayer constant main-actor, and this closure is not.
+        let rateReasonKey = "AVPlayerRateDidChangeReasonKey"
         let rateObs = NotificationCenter.default.addObserver(
             forName: AVPlayer.rateDidChangeNotification,
             object: avPlayer,
             queue: .main
         ) { [weak self] notification in
-            let reason = (notification.userInfo?[AVPlayer.rateDidChangeReasonKey] as? String)
+            let reason = (notification.userInfo?[rateReasonKey] as? String)
                 .map(AVPlayer.RateDidChangeReason.init(rawValue:))
             // Delivered on .main (queue: .main above), so assert MainActor to reach @MainActor state.
             MainActor.assumeIsolated {
